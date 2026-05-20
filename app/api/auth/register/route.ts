@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { ZodError } from "zod";
+import { validateRegister } from "@/lib/validation/auth";
 import { registerSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +10,18 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+
+        try {
+            var { email, password, name } = validateRegister(body) as {
+                email: string;
+                password: string;
+                name?: string;
+            };
+        } catch (err) {
+            if (err instanceof ZodError) {
+                return NextResponse.json({ message: "Invalid input", errors: err.errors }, { status: 400 });
+            }
+            throw err;
         const parsed = registerSchema.safeParse(body);
 
         if (!parsed.success) {
